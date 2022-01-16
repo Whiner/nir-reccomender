@@ -52,19 +52,22 @@ const readFile = async (filename) => {
     return arr;
 };
 
-
-async function start(content) {
-    // let users = content[0].split(',');
+function contentToMap(content) {
     const allRatings = new Map();
-    let articlesCount;
-    const usersCount = content.length - 1;
-    const neighborsCount = 2;
     for (let i = 1; i < content.length; i++) {
         const ratings = content[i].split(',');
         let value1 = ratings.slice(1).map(value => +value);
         allRatings.set(ratings[0], value1);
-        articlesCount = value1.length;
     }
+    return allRatings;
+}
+
+function fillZerosByPredictions(allRatings) {
+    // let users = content[0].split(',');
+
+    const articlesCount = Array.from(allRatings.keys()).length;
+    const usersCount = Array.from(allRatings.values())[0].length;
+    const neighborsCount = 2;
 
     let predictedCount = 0;
 
@@ -83,65 +86,12 @@ async function start(content) {
             predictedCount++;
         }
     }
-    // while (!allFilled) {
-    //     userIndex++;
-    //     if (userIndex === usersCount + 1) {
-    //         articleIndex++;
-    //         userIndex = 0;
-    //         if (articleIndex === articlesCount + 1) {
-    //             break;
-    //         }
-    //     }
-    //
-    //     const predictedArticle = `Статья ${articleIndex + 1}`;
-    //     const articleRatings = allRatings.get(predictedArticle);
-    //     if (articleRatings[userIndex] !== 0) {
-    //         continue;
-    //     }
-    //
-    //     const similarities = getSimilarities(allRatings, predictedArticle, neighborsCount, userIndex);
-    //     const userRatings = getUserRatings(allRatings, similarities, userIndex);
-    //
-    //     articleRatings[userIndex] = predict(Array.from(similarities.values()), userRatings, neighborsCount);
-    //     predictedCount++;
-    // }
 
-    allRatings.forEach((value, key) => {
+    allRatings.forEach((value) => {
         let str = '';
         value.forEach(v1 => str += `${v1.toString().replace('.', ',')} `);
         console.log(str);
     });
-
-    // for (let j = 0; j < 10; j++) {
-    //     const predictedArticle = `Статья ${j + 1}`;
-    //     let str = '';
-    //     for (let i = 0; i < 10; i++) {
-    //         const predictedUser = i;
-    //         const similarities = getSimilarities(allRatings, predictedArticle);
-    //         const userRatings = getUserRatings(allRatings, similarities, predictedUser);
-    //         const predict1 = predict(Array.from(similarities.values()), userRatings, 3);
-    //         const articleRatings = allRatings.get(predictedArticle);
-    //         if (articleRatings[predictedUser] === 0) {
-    //             articleRatings[predictedUser] = predict1;
-    //             str += (`${predict1.toString().replace('.', ',')} `);
-    //         } else {
-    //             str += (`${articleRatings[predictedUser].toString().replace('.', ',')} `);
-    //         }
-    //
-    //         // console.log(`Предсказанное значение для ${predictedArticle} от ${users[predictedUser]} равно ${predict1.toString().replace('.', ',')}`);
-    //     }
-    // console.log(str);
-
-
-}
-
-function sleep(milliseconds) {
-    var start = new Date().getTime();
-    for (var i = 0; i < 1e7; i++) {
-        if ((new Date().getTime() - start) > milliseconds) {
-            break;
-        }
-    }
 }
 
 function getUserRatings(allRatings, ratingsForPrediction, predictedUser) {
@@ -194,7 +144,7 @@ function predict(similarity, ratings, neighbors_count) {
 }
 
 async function justStart() {
-    start(await readFile('file.csv'));
+    fillZerosByPredictions(await readFile('file.csv'));
 }
 
 // justStart();
@@ -207,22 +157,61 @@ function removeItem(arr, index) {
 }
 
 async function evaluation() {
-    start(await readFile('evaluation.csv'));
+    const content = await readFile('evaluation.csv');
+    fillZerosByPredictions(contentToMap(content));
 }
 
-evaluation();
+// evaluation();
 
 function mae() {
 
-}
-
-function mse(defaultRatings, predictedRatings, ) {
-    const answersCount = 10;
-    for (let i = 0; i < answersCount; i++) {
-
-    }
-}
-
-function rmse() {
 
 }
+
+async function mse() {
+    const content = await readFile('evaluation.csv');
+    const allRatings = contentToMap(content);
+
+    const mseArr = [];
+    const maeArr = [];
+
+    allRatings.forEach((value, key) => {
+        const valueCopy = [...value];
+        for (let j = 0; j < value.length; j++) {
+            value[j] = 0;
+            fillZerosByPredictions(allRatings);
+            const predictedValue = allRatings.get(key)[j];
+            mseArr.push(calcMse(predictedValue, valueCopy[j]));
+            maeArr.push(calcMae(predictedValue, valueCopy[j]));
+            value[j] = valueCopy[j];
+        }
+    });
+
+    const reducedMse = mseArr.reduce((previousValue, currentValue) => previousValue + currentValue);
+    const calculatedMse = (1 / mseArr.length) * reducedMse;
+    console.log('MSE = ' + calculatedMse);
+
+    const reducedMae = maeArr.reduce((previousValue, currentValue) => previousValue + currentValue);
+    const mae = (1 / maeArr.length) * reducedMae;
+    console.log('MAE = ' + mae);
+
+    console.log('RMSE = ' + Math.sqrt(calculatedMse));
+
+    //     for (let j = 0; j < usersCount; j++) {
+    //
+    //     }
+    // }
+}
+
+function calcMse(a, b) {
+    return Math.pow(a - b, 2);
+}
+
+function calcMae(a, b) {
+    return Math.abs(a - b);
+}
+
+mse();
+
+
+

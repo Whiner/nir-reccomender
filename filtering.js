@@ -89,7 +89,7 @@ function fillZerosByPredictions(allRatings) {
 
     allRatings.forEach((value) => {
         let str = '';
-        value.forEach(v1 => str += `${v1.toString().replace('.', ',')} `);
+        value.forEach(v1 => str += `${v1.toFixed(2).replace('.', ',')} `);
         console.log(str);
     });
 }
@@ -184,6 +184,7 @@ async function mse() {
             mseArr.push(calcMse(predictedValue, valueCopy[j]));
             maeArr.push(calcMae(predictedValue, valueCopy[j]));
             value[j] = valueCopy[j];
+            console.log('--------------------');
         }
     });
 
